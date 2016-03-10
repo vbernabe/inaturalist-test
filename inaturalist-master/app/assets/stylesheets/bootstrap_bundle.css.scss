@@ -1,0 +1,67 @@
+@font-face {
+  font-family: 'Glyphicons Halflings';
+
+  src: url('/fonts/glyphicons-halflings-regular.eot');
+  src: url('/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('/fonts/glyphicons-halflings-regular.woff2') format('woff2'), url('/fonts/glyphicons-halflings-regular.woff') format('woff'), url('/fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('/fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+$font-stack: Whitney, "Trebuchet MS", Arial, sans-serif;
+@font-face { 
+  font-family: Whitney; 
+  src: asset-data-url('Whitney-Book-Pro.otf');
+}
+@font-face { 
+  font-family: Whitney; 
+  font-weight: bold;
+  src: asset-data-url('Whitney-Medium-Pro.otf');
+} 
+@font-face { 
+  font-family: Whitney; 
+  font-weight: 100;
+  src: asset-data-url('Whitney-Light-Pro.otf');
+} 
+@font-face { 
+  font-family: Whitney; 
+  font-weight: 600;
+  src: asset-data-url('Whitney-Semibold-Pro.otf');
+} 
+@font-face { 
+  font-family: Whitney; 
+  font-weight: 800;
+  src: asset-data-url('Whitney-Bold-Pro.otf');
+}
+body {font-size: 75%;}
+body .bootstrap {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #333333;
+  background-color: #ffffff;
+  font-family: $font-stack;
+}
+// The modal-backdrop gets inserted at the end of the BODY tag, i.e. outsisde
+// of our namespace div, so we need to re-apply these styles. Ugh.
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1040;
+  background-color: #000;
+}
+.modal-backdrop.fade {
+  filter: alpha(opacity=0);
+  opacity: 0;
+}
+.modal-backdrop.in {
+  filter: alpha(opacity=50);
+  opacity: .5;
+}
+.ui-front {z-index: 1051;}
+.bootstrap {
+  @import "bootstrap";
+  .bootstrap-10 {
+    @import "bootstrap-10";
+  }
+  @import 'bootstrap-inat';
+}

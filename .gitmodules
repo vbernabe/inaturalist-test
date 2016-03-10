@@ -1,0 +1,4 @@
+[submodule "provisioning"]
+	path = provisioning
+	url = git@github.com:yalenuscollege/provisioning.git
+	branch = master

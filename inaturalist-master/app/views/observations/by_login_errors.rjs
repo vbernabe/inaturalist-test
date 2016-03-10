@@ -1,0 +1,1 @@
+page.alert(<%=t :there_were_errors. %>)

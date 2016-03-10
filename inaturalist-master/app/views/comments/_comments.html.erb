@@ -1,0 +1,26 @@
+<%- 
+  parent ||= comments
+  hide_form ||= false
+  remote ||= nil 
+  header_tag ||= "h3"
+-%>
+<%= content_tag header_tag do %>
+  <%=t :comments %>
+<% end -%>
+<% if parent.comments.empty? %>
+  <div class="text-muted noresults"><%=t :no_comments_yet %></div>
+<% end %>
+<% for comment in parent.comments.sort {|a,b| a.created_at <=> b.created_at } %>
+  <div class="<%= cycle('odd', 'even') %>">
+    <%= render :partial => 'shared/activity_item', :object => comment %>
+  </div>
+<%- end -%>
+<%- unless hide_form -%>
+  <div id="new-comment">
+    <h3><%=t :add_comment %></h3>
+    <%= render :partial => 'comments/comment_form', :locals => { 
+      :comment => Comment.new(:parent => parent, :user => logged_in? ? current_user : nil),
+      :remote => remote
+    } %>
+  </div><!-- end new comment -->
+<% end -%>

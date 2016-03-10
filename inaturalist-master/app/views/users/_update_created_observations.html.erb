@@ -1,0 +1,32 @@
+<%-
+  user = update_created_observations || resource
+  updates ||= []
+  observations = if @update_cache && @update_cache[:observations]
+    updates.map{|u| @update_cache[:observations][u.notifier_id]}
+  end.compact
+  observations = updates.map{|u| u.notifier}.compact if observations.blank?
+  default_observation = observations.first
+  return if observations.blank? # this really shouldn't happen
+  place_guesses = observations.map{|o| o.place_guess.blank? ? nil : o.place_guess }.compact.uniq
+  login = default_observation.user.login
+-%>
+
+<div class="updatecontent">
+  <div class="observationcontrols stacked"></div>
+  
+  <div class="observations <%= observations.size > 1 ? 'medium grid' : 'mini' %> stacked">
+    <%- compact do %>
+      <%= render :partial => "observations/cached_component", :collection => observations %>
+    <% end -%>
+  </div>
+  
+  <div class="meta">
+    <%= link_to "View #{login}'s observations", observations_by_login_path(login), :class => "#{'readmore' if place_guesses.size == 0}" %>
+    <% unless place_guesses.blank? -%>
+      from
+      <%= place_guesses.map {|pg| 
+        link_to(pg, observations_by_login_path(login, :q => pg, :search_on => "place"))
+      }.join(', ').html_safe %>
+    <% end -%>
+  </div>
+</div>

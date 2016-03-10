@@ -1,0 +1,30 @@
+<p>
+  <b><%=t :placement %>:</b>
+  <%= @announcement.placement %>
+</p>
+
+<p>
+  <b><%=t :start %>:</b>
+  <%= @announcement.start %>
+</p>
+
+<p>
+  <b><%=t :end %>:</b>
+  <%= @announcement.end %>
+</p>
+
+<p>
+  <b><%=t :locale %>:</b>
+  <%= @announcement.locale %>
+</p>
+
+<p>
+  <b><%=t :body %>:</b>
+</p>
+
+<%=raw @announcement.body %>
+
+
+
+<%= link_to t(:edit), edit_announcement_path(@announcement) %> |
+<%= link_to t(:back), announcements_path %>

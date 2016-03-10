@@ -1,0 +1,19 @@
+# Example of a local database setup.
+login: &login
+  host: localhost
+  encoding: utf8
+  adapter: postgis
+  username: you
+  template: template_postgis
+
+development:
+  <<: *login
+  database: inaturalist_development
+
+test:
+  <<: *login
+  database: inaturalist_test
+
+production:
+  <<: *login
+  database: inaturalist_production

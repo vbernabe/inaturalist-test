@@ -1,0 +1,220 @@
+<%- content_for(:title) do -%>
+<%= t :create_a_new_place -%>
+
+<%- end -%>
+<%- content_for(:extracss) do -%>
+  <%= stylesheet_link_tag "jquery/ui.tabs.css" %>
+  <%= stylesheet_link_tag "leaflet.fullscreen/Control.FullScreen.css" %>
+  <style type="text/css" media="screen">
+    #places {
+      min-height: 100px;
+      max-height: 380px;
+      overflow: auto;
+    }
+    #importMap,
+    #drawingMap {
+      width: 590px;
+      height: 475px;
+    }
+    
+    .external_place_link {
+      padding: 0.25em 0; 
+      border-bottom: 1px solid #eee;
+    }
+    
+    .external_place_link .button {
+      background-color: #dedede;
+      color: white;
+      text-align: center;
+      padding: 5px;
+      float: right;
+      margin-left: 10px;
+    }
+    
+    .external_place_link .button:hover {
+      background-color: #aaa;
+      border-color: #aaa;
+      color: white;
+    }
+    
+    .external_place_link .description {
+      display: block;
+    }
+    
+    .external_place_link .namelink {
+      font-weight: bold;
+    }
+    
+    #new_place input.text {
+      width: 100%;
+    }
+  </style>
+<%- end -%>
+<%- content_for(:extrajs) do -%>
+  <%= google_maps_js %>
+  <%= javascript_include_tag 'map_bundle' %>
+  <%= leaflet_js(:draw => true) %>
+  <%= javascript_include_tag "shramov-leaflet-plugins/Bing" %>
+  <%= javascript_include_tag "leaflet.fullscreen/Control.FullScreen.js" %>
+  <script type="text/javascript" charset="utf-8">
+    var CLOUDMADE_KEY = <%= CONFIG.cloudmade ? raw(CONFIG.cloudmade.try(:key).to_json) : "null" %>,
+        BING_KEY = <%=CONFIG.bing ? raw(CONFIG.bing.key.inspect) : "null" %>,
+        PLACE_INVALID = <%= @place && !@place.errors.blank? ? 'true' : 'false' %>,
+        CURRENT_USER_IS_CURATOR = <%= logged_in? && current_user.is_curator? ? 'true' : 'false' %>
+    $(document).ready(function() {
+      window.importMap = iNaturalist.Map.createMap({div: 'importMap'})
+      window.map = L.map('drawingMap').setView([0,0], 1)
+      var d = new Date()
+      var bing = new L.BingLayer(BING_KEY, {type:"AerialWithLabels"});
+      if (CLOUDMADE_KEY) {
+        var osm = L.tileLayer('http://{s}.tile.cloudmade.com/{key}/22677/256/{z}/{x}/{y}.png', {
+          attribution: 'Map data &copy; '+d.getFullYear()+' OpenStreetMap contributors, Imagery &copy; '+d.getFullYear()+' CloudMade',
+          key: CLOUDMADE_KEY
+        })
+        map.addLayer(osm);
+        map.addControl(new L.Control.Layers({'Map (OSM)':osm, "Satellite (Bing)":bing}, {}));
+      } else {
+        map.addLayer(bing)
+      }
+      var fullScreen = new L.Control.FullScreen();
+      map.addControl(fullScreen)
+      window.drawnItems = new L.FeatureGroup()
+      map.addLayer(drawnItems)
+      var drawControl = new L.Control.Draw({
+        draw: {
+          marker: false,
+          rectangle: false,
+          circle: false,
+          polyline: false,
+          polygon: {
+            allowIntersection: false,
+            drawError: {
+                color: '#e1e100', // Color the shape will turn when intersects
+                message: 'Illegal shape'
+            }
+          }
+        },
+        edit: {
+          featureGroup: drawnItems,
+          marker: false
+        }
+      })
+      map.addControl(drawControl)
+      map.on('draw:created', function(e) {
+        var type = e.layerType,
+            layer = e.layer
+        drawnItems.addLayer(layer)
+        map.addLayer(layer)
+        saveGeom()
+      })
+      map.on('draw:edited', function(e) {
+        var layers = e.layers
+        saveGeom()
+      })
+      map.on('draw:deleted', function(e) {
+        saveGeom()
+      })
+
+      $('#tabs').tabs({
+        active: PLACE_INVALID || window.location.hash.match(/manual/) ? 1 : 0
+      })
+      $('#place_parent_id').chooser({
+        collectionUrl: '/places/autocomplete.json',
+        resourceUrl: '/places/{{id}}.json?partial=autocomplete_item',
+        chosen: eval('(' + $('place_parent_id').attr('data-json') + ')')
+      })
+
+      $('.kml_field :input').bind('change', function() {
+        var limit = CURRENT_USER_IS_CURATOR ? 1048576*5 : 1048576
+        if (this.files[0].size > limit) {
+          alert(I18n.t('kml_file_size_error'))
+          $(this).val(null)
+        }
+      })
+      $('#place_selector form')
+        .on('ajax:before', function() {
+          $('.loading', this).show()
+        })
+        .on('ajax:complete', function() {
+          $('.loading', this).hide()
+        })
+        .on('ajax:success', function(event, json, status) {
+          $(this).siblings('.place_selector_places').html(json.map(function(place) { 
+            return '<li class="clear">' + place.html + '</li>'
+          }).join(' '))
+        })
+    })
+    function saveGeom() {
+      $(':input[name=geojson]').val(JSON.stringify(drawnItems.toGeoJSON()))
+      var c = drawnItems.getBounds().getCenter()
+      $('#place_latitude').val(c.lat)
+      $('#place_longitude').val(c.lng)
+    }
+  </script>
+<%- end -%>
+<div id="pageheader">
+  <div class="breadcrumbs">
+    <%= link_to t(:back_to_places), places_path, :class => 'back crumb' %>
+  </div><!-- /#breadcrumbs -->
+  <h2><%= t(:create_a_new_place) %></h2>
+</div>
+
+<div id="tabs" class="ui-tabs">
+  <ul>
+    <li><a href="#import"> <%= t(:import_from_yahoo) %></a></li>
+    <li><a href="#manual"> <%= t(:manually_create_new_place) %></a></li>
+  </ul>
+  
+  <div id="import">
+    <div class="column span-8">
+      <h3><%= t(:find_a_place) %></h3>
+      <p class="description">
+        <%= t(:search_for_place_to_import_from_yahoo) %>
+      </p>
+
+      <div id="place_selector">
+        <%= form_tag url_for(:action => :find_external), :remote => true, "data-type" => "json" do %>
+          <div class="clear buttonrow">
+            <%= text_field_tag :q, '', :class => 'inter text' %>
+            <%= submit_tag t(:search), :class => 'button', "data-loading-click" => true %>
+          </div>
+        <% end %>
+        <ul id="places" class="place_selector_places" style="margin: 0"></ul>
+      </div>
+    </div>
+
+    <div class="last column span-15">
+      <div id="importMap"></div>
+    </div>
+  </div>
+
+  <div id="manual">
+    <div class="column span-15">
+      <h3>
+      	<%= t('views.places.new.map_instruction') %>
+        <span class="ui small description"><%= t :double_click_to_finish %></span>
+      </h3>
+      <div id="drawingMap"></div>
+    </div>
+    <div class="last column span-9">
+      <h3><%= t(:give_it_some_detail) %></h3>
+      <%= form_for @place, :builder => DefaultFormBuilder, :html => {:multipart => true} do |f| %>
+        <%= f.text_field :name, :class => 'text', :required => true %>
+        <%= f.text_field :parent_id, :placeholder => t(:type_place_name), :style => "width: 300px" %>
+        <%= f.text_field :latitude, :class => 'text' %>
+        <%= f.text_field :longitude, :class => 'text' %>
+        <div class="description stacked">
+          <%=t 'views.places.new.coordinates_desc' %>
+        </div>
+        <%= f.form_field :kml, :label => "#{t(:kml)} (#{t(:optional)})", :description => t('views.places.kml_field_desc') do %>
+          <%= file_field_tag :file, :accept => "application/vnd.google-earth.kml+xml" %>
+        <% end -%>
+        <%= f.select :place_type, Place::PLACE_TYPE_CODES.map{|type, code| [t("place_geo.geo_planet_place_types.#{type.gsub(" ", "_")}"), code]}.sort,
+                     :include_blank => t(:unknown), :class => 'select' %>
+        <%= f.check_box :prefers_check_lists, :checked => false, :label_after => true, :description => t('views.places.new.check_list_note') %>
+        <input type="hidden" id="place_geometry" name="geojson"/>
+        <%= f.submit t(:save_place), :class => 'default button' %>
+      <% end %>
+    </div>
+  </div>
+</div>

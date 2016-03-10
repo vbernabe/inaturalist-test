@@ -1,0 +1,95 @@
+<%- content_for(:extracss) do -%>
+  <%= stylesheet_link_tag 'observations' %>
+  <style type="text/css" media="screen">
+    .field .text {width: 575px;}
+  </style>
+<%- end -%>
+<%- content_for(:extrajs) do -%>
+  <script type="text/javascript" charset="utf-8">
+    var PLACE = <%=json_escape @taxon_link.place.to_json.html_safe %>
+    function toggleSpeciesOnly() {
+      if ($('#taxon_link_show_for_descendent_taxa').prop('checked')) $('.species_only_field').show()
+      else $('.species_only_field').hide()
+    }
+    $(document).ready(function() {
+      $('#species_guess').simpleTaxonSelector()
+      $('#taxon_link_place_id').chooser({
+        collectionUrl: '/places/autocomplete.json',
+        resourceUrl: '/places/{{id}}.json?partial=autocomplete_item',
+        chosen: PLACE
+      })
+      toggleSpeciesOnly()
+      $('#taxon_link_show_for_descendent_taxa').click(toggleSpeciesOnly)
+    })
+  </script>
+<%- end -%>
+<div class="column span-15 append-1">
+  <%= form_for @taxon_link, :builder => DefaultFormBuilder, :html => {:class => 'taxon_link_form'} do |f| %>
+    <%= f.text_field :url, :required => true %>
+    <%= f.text_field :site_title, :required => true %>
+    <%= f.text_field :short_title, :maxlength => 10, :description => t(:short_or_abbreviated_title_for_display) %>
+
+    <%= f.form_field :taxon, :required => true do %>
+      <%= text_field_tag :species_guess, '', :class => "text" %>
+      <%= f.hidden_field :taxon_id %>
+    <% end -%>
+
+    <%= f.text_field :place_id, :placeholder => t(:start_typing_place_name),
+      :description => t(:set_a_place_if_this_link_only_applies_to) %>
+
+    <%= f.check_box :show_for_descendent_taxa, :label_after => true %>
+    <%= f.check_box :species_only, :label_after => true, :label => t(:only_show_for_species_subspecies_varieties_etc),
+      :wrapper_options => {:style => "display:none"} %>
+
+    <div class="required stacked">* <%= t :required_field %></div>
+
+    <div class="buttonrow">
+      <%= f.submit t(:save), :class => "default button" %>
+      <%= link_to t(:cancel), @taxon_link.taxon, :class => "button" %>
+      <% unless @taxon_link.new_record?  -%>
+        <%= link_to t(:delete), @taxon_link, :method => :delete,
+          :data => {:confirm => t(:are_you_sure_want_delete_taxon_link)},
+          :class => "minor button delete" %>
+      <% end -%>
+    </div>
+  <% end -%>
+</div>
+
+<div class="last column span-8">
+  <div id="help_field" class="description field" >
+    <p class="ui"><%= t(:if_this_link_will_apply_to_descendant) %></p>
+    <dl>
+      <dt><%= t(:name_llaves) %></dt>
+      <dd>
+        <%= t(:the_name_of_the_taxon_including_space) %>
+        <strong>Example:</strong><br/>
+        <code>http://site.com/[NAME]</code> -> 
+        <code>http://site.com/Homo%20sapiens</code>
+      </dd><br/>
+
+      <dt><%= t(:genus_slash_species) %></dt>
+      <dd>
+        <%= t(:use_this_if_the_url_needs_genus_species_separated) %>
+        <strong>Example:</strong><br/>
+        <code>http://site.com/?g=[GENUS]&amp;s=[SPECIES]</code> -> 
+        <code>http://site.com/?g=Homo&amp;s=sapiens</code>
+      </dd><br/>
+
+      <dt>[RANK]</dt>
+      <dd>
+        The rank of the taxon, e.g. family, species, etc.<br/><br/>
+        <strong>Example:</strong><br/>
+        <code>http://site.com/[RANK]/[NAME]</code> -> 
+        <code>http://site.com/species/Homo%20sapiens</code>
+      </dd><br/>
+
+      <dt>[NAME_WITH_RANK]</dt>
+      <dd>
+        The name of the taxon with the rank. For infraspecific ranks, rank is inserted after the binomial.<br/><br/>
+        <strong>Example:</strong><br/>
+        <code>http://site.com/[NAME_WITH_RANK]</code> -> 
+        <code>http://site.com/Homo%20sapiens%20ssp.%20inaturalensis</code>
+      </dd>
+    </dl>
+  </div>
+</div>

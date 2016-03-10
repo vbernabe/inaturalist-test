@@ -1,0 +1,18 @@
+<%=t :hi %>
+
+<% if @personal_message and @personal_message != "" -%>
+<%= @personal_message %>
+
+<% end -%>
+<%= t(:preview_personal_message, :site=>  CONFIG.site_name ) %>
+
+<%=t :you_can_sign_free_at, :site_name => SITE_NAME %>
+
+<%= signup_url %>
+
+<%=t :check_out_my_observations_at %> <%= observations_by_login_url(@user.login) -%>.
+
+- <%= @sending_user %>
+
+============
+<%= t(:mail_disclaimer, :site => CONFIG.info_email, :site_name => CONFIG.site_name) %>

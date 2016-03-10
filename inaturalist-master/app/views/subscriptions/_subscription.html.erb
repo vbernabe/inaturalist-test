@@ -1,0 +1,59 @@
+<%- 
+  subscription ||= @subscription
+  resource ||= subscription.resource
+  subscription ||= if resource && logged_in?
+    current_user.subscriptions.where(:resource_type => resource.class.to_s, :resource_id => resource.id).first
+  end
+-%>
+<div class="meta subscription">
+  <%- new_subscription = Subscription.new(:user => current_user, :resource => resource) %>
+  <%= form_for new_subscription, :html => {
+    :class => "subscribe",
+    :style => "#{'display:none;' if subscription}"
+  } do |f| %>
+    <%= f.hidden_field :resource_type %>
+    <%= f.hidden_field :resource_id %>
+    <%= f.hidden_field :user_id %>
+    <%=t :subscribe_to_x_from_this_y_html, 
+      :x => commas_and(resource.class.notifying_associations.keys.map{|k| t(k).downcase}),
+      :y => t(resource.class.to_s.underscore.humanize.downcase).downcase %>
+  <% end -%>
+
+  <%= form_tag delete_subscription_url(resource.class.to_s, resource.id), 
+      :method => :delete, 
+      :class => 'unsubscribe', 
+      :style => "#{'display:none;' unless subscription}" do %>
+    <%= t :you_are_subscribed_to %>
+    <%= commas_and(resource.class.notifying_associations.keys.map{|k| t(k).downcase}) %>
+    <% if subscription && subscription.taxon -%>
+      <%= t :of %> <%= subscription.taxon.default_name.is_scientific? ? subscription.taxon.default_name.name : subscription.taxon.default_name.name.pluralize.downcase %>
+    <% end -%>
+    <%= t :from_this %> <%= t(resource.class.to_s.underscore.humanize.downcase).downcase %>.
+    <%= hidden_field_tag :resource_type, resource.class.to_s %>
+    <%= hidden_field_tag :resource_id, resource.id %>
+    <nobr>
+      <% if resource.is_a?(Place) -%>
+        <%= link_to ("<span class='ui-icon inlineblock ui-icon-gear'></span>" + t(:settings).capitalize).html_safe, edit_subscription_by_resource_url(resource.class.to_s, resource.id),
+          :class => "subscriptionsettings" %>
+      <% else %>
+        <%= link_to_function t(:unsubscribe), "$(this).parents('form:first').submit()" %>
+      <% end -%>
+    </nobr>
+  <% end -%>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+  $('.subscription form').submit(function() {
+    $(this).fadeOut(function() {
+      $(this).siblings('form').fadeIn()
+    })
+    var data = $(this).serialize() + '&format=json'
+    $.ajax({
+      url: $(this).attr('action'),
+      type: 'post',
+      data: data
+    })
+    return false
+  })
+  $('.subscriptionsettings').subscriptionSettings()
+</script>

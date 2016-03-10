@@ -1,0 +1,137 @@
+- content_for :title do
+  = @title = t(:export_observations)
+- content_for :extrajs do
+  = google_maps_js
+  = javascript_include_tag "jquery/plugins/inat/datepicker"
+  = javascript_include_tag "jquery/plugins/jquery.latLonSelector"
+  = javascript_include_tag 'map_bundle'
+  = javascript_include_tag 'observations/filters', 'observations/export'
+- content_for :extracss do
+  = stylesheet_link_tag "observations", "observations/filters"
+  :css
+    #query {width: 910px; border: 10px solid #ccc;padding:10px;}
+    #filters {width:924px;}
+    #preview {border: 1px solid #eee;height: 200px;overflow-x:hidden; overflow-y:auto;}
+    #preview .content {display:table-row-group;}
+    #query, #filtersplaceholder, #preview, #columns {margin-bottom: 20px;}
+    #filtersplaceholder {margin-bottom: 40px; }
+    .number {display:inline-block; text-align:center; border-radius: 100px; width:1.4em; height:1.4em; background-color: #eee; margin-right:0.2em;font-size:128%;}
+    #recent_exports {margin-top:40px;}
+    #recent_exports b {color:#333;}
+    #order_filters {display:none;}
+    .simpleTaxonSelector .choice.status {
+      position: absolute;
+      top: 32px;
+      background: white url(#{ image_path('logo-grey-15px.png') }) 0 3px no-repeat;
+      background-color:white !important;
+      box-shadow: #eee 2px 2px 5px;
+      padding-bottom: 5px !important;
+      padding-right: 5px !important;
+      width: 100%;
+      z-index: 100;
+    }
+    #columns table {width: 100%;}
+    #columns td {width:25%;}
+    #success table {margin:0;}
+    #success td {border:0 transparent;}
+    #rundialog .status {font-size:140%;}
+    #rundialog .meta, .centered {text-align: center;}
+#pageheader.clear
+  %h2= @title
+
+- if @export_url
+  #success.success.ui
+    %h3 Export complete
+    = render 'exports_table', :flow_tasks => [@flow_task]
+= form_for ObservationsExportFlowTask.new, :url => flow_tasks_url, :remote => true, :html => {'data-type' => 'json'} do |f|
+  .column.span-24
+    %h3
+      %span.number 1
+      =t :create_a_query
+    %p=t 'views.observations.export.create_a_query_desc_html'
+    = f.fields_for :inputs, f.object.inputs.first || f.object.inputs.build do |fti|
+      = fti.fields_for :extra do |ftie|
+        = ftie.text_field :query, :type => "text", :class => "text", :id => "query", :placeholder => t('views.observations.export.query_placeholder')
+    #filtersplaceholder
+    #previewwrapper
+      %h3#previewheader
+        .right.status.ui.meta=t :no_matching_observations
+        %span.number 2
+        =t :preview
+      #preview
+        .observations.table.stacked
+          = render :partial => 'observations/observations_table_header'
+          .content
+    %h3.inlineblock
+      %span.number 3
+      =t :choose_columns
+    %p=t 'views.observations.export.choose_columns_desc'
+    #columns.clear
+      = f.fields_for :options do |fo|
+        = fo.fields_for :columns, :builder => DefaultFormBuilder do |foc|
+          - {:basic => Observation::BASIC_COLUMNS, :geo => Observation::GEO_COLUMNS, :taxon => Observation::TAXON_COLUMNS, :taxon_extras => Observation::EXTRA_TAXON_COLUMNS}.each do |ctype,columns|
+            .column.span-24
+              %h4
+                =t ctype
+                %span.small.meta.ui
+                  = surround '(',')' do
+                    = link_to_function t(:all), "$('##{ctype}_columns :checkbox').prop('checked', true)"
+                    %span.meta
+                      |
+                    = link_to_function t(:none), "$('##{ctype}_columns :checkbox').prop('checked', false)"
+              - help = t("views.observations.export.#{ctype}_help_html", :default => '')
+              - unless help.blank?
+                %p.meta.ui= help
+              %table{:id => "#{ctype}_columns"}
+                - for grp in columns.in_groups_of(4)
+                  %tr
+                    - for c in grp.compact
+                      %td
+                        = foc.check_box c, :label => c, :checked => c !~ /place_[tcs]/ && ctype != :taxon_extras, :label_after => true, :wrapper => {"data-tip" => t("views.observations.field_descriptions.#{c.underscore}", :default => ''), "data-tip-position-at" => "left bottom"}
+          .column.span-24
+            %h4
+              =t :observation_fields
+              %span.small.meta.ui
+                = surround '(',')' do
+                  = link_to_function t(:all), "$('#observation_field_columns :checkbox').prop('checked', true)"
+                  %span.meta
+                    |
+                  = link_to_function t(:none), "$('#observation_field_columns :checkbox').prop('checked', false)"
+            %table#observation_field_columns
+              - for grp in @observation_fields.in_groups_of(4)
+                %tr
+                  - for of in grp
+                    %td
+                      - if of
+                        = foc.check_box "field:#{of.normalized_name}", :label => "field:#{of.normalized_name}", :label_after => true, :wrapper => {"data-tip" => of.description, "data-tip-position-at" => "left bottom"}
+            / = text_field_tag :ofv_chooser, "", :placeholder => "Add an observation field", :class => "text"
+    %h3.inlineblock
+      %span.number 4
+    = f.submit t(:create_export, :default => "Create export"), :class => "default inline button", :data => {:loading_click => t(:loading)}
+    - unless @recent_exports.blank?
+      #recent_exports.meta.clear
+        %strong=t :recent_exports
+        = render 'exports_table', :flow_tasks => @recent_exports
+
+#filters
+  = render "filter_fields", 
+    hide_buttons: true, 
+    show_user_field: true, 
+    show_project_field: true, 
+    show_multiple_taxa_field: true, 
+    show_extra_date_fields: true
+#rundialog.dialog{:style => "display:none"}
+  .clear.centered.inline.buttonrow
+    .inter
+      #exportingstatus.loading.status=t :exporting
+  %p.description.ui=t 'views.observations.export.be_patient'
+  .column.span-12.stacked
+    .column.span-6
+      .clear.centered.inline.buttonrow
+        %strong.inter=t :check_back_later
+      .meta=t 'views.observations.export.check_back'
+    - unless current_user.email.blank?
+      .column.span-6.last
+        #receive_an_email.clear.centered.inline.buttonrow
+          = link_to_function t('views.observations.export.receive_an_email_with_your_data'), "emailWhenComplete()", :class => "button"
+        .meta= t('views.observations.export.receive_an_email_with_your_data_help')

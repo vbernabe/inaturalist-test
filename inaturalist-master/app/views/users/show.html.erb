@@ -1,0 +1,55 @@
+<% content_for(:title) do %><%= @title = t(:users_profile, :user => @user.login) %><% end %>
+
+<% content_for(:extracss) do %>
+<%= stylesheet_link_tag "taxa" %>
+<style type="text/css" media="screen">
+  #medium_user_image { width:auto;}
+  #medium_user_image img {max-width: 300px;}
+  .wikipedia_summary { display: none;}
+</style>
+<!--[if lt IE 7]>
+  <%= stylesheet_link_tag 'blueprint/ie' %>
+<![endif]-->
+<% end -%>
+
+<% content_for(:extrajs) do %>
+  <!--[if lt IE 8]>
+  <script src="http://ie7-js.googlecode.com/svn/trunk/lib/IE8.js" type="text/javascript"></script>
+  <![endif]-->
+  <script type="text/javascript" charset="utf-8">
+    $(document).ready(function() {
+      $('#nodescription .cancellink').click(function(e) {
+        $('#nodescription').removeClass('editing')
+        $('#nodescription').find('.more').show()
+        $('#nodescription').find('form').hide()
+        e.stopPropagation()
+        return false;
+      })
+      $('#nodescription').click(function(e) {
+        if ($(this).hasClass('editing')) { return true };
+        $(this).addClass('editing')
+        $(this).find('.more').hide()
+        $(this).find('form').show()
+      })
+    })
+  </script>
+<% end %>
+
+<%- content_for(:extrahead) do -%>
+  <meta property="og:image" content="<%= html_attributize @shareable_image_url %>"/> 
+  <meta property="og:description" content="<%= html_attributize @shareable_description %>"/> 
+  <meta name="twitter:card" content="summary">
+  <meta name="og:title" content="<%= html_attributize @title %>">
+  <% if twitter_pa = @user.provider_authorizations.detect{|pa| pa.provider_name == "twitter"} -%>
+    <meta property="twitter:creator:id" content="<%= twitter_pa.provider_uid %>">
+  <% end -%>
+<%- end -%>
+
+<%-
+  # show only the suspended message (no user profile) to everyone but curators.
+  # curators should be able to see the profile to change spammer status
+  if (@user.spammer? || @user.suspended?) && !(current_user && current_user.is_curator?) %>
+  <%= render :partial => "suspended" %>
+<%- else %>
+  <%= render :partial => "show" %>
+<% end %>

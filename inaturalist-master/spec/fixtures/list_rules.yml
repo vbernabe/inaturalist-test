@@ -1,0 +1,4 @@
+BerkeleyAmphibiansRule:
+  list: berkeley_amphibians
+  operator: in_taxon?
+  operand: Amphibia (Taxon)

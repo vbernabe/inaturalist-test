@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+     xmlns:fb="http://www.facebook.com/2008/fbml"
+     xmlns:og="http://ogp.me/ns#">
+  <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# <% if CONFIG.facebook && CONFIG.facebook.namespace %><%= CONFIG.facebook.namespace %>: http://ogp.me/ns/fb/<%= CONFIG.facebook.namespace %>#<% end %>">
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+    <% if logged_in? && @provider_authorizations -%>
+      <meta name="authenticators" content="<%= @provider_authorizations.map{|pa| pa.provider}.join(',') %>">
+    <% end -%>
+    <title><%= CONFIG.site_name %> &middot; <%= yield :title %></title>
+    <%= favicon_link_tag %>
+    <%= stylesheet_link_tag 'blueprint_bundle' %>
+    <%= render :partial => 'shared/common_stylesheets'%>
+    <%= stylesheet_link_tag "blueprint-inat" %>
+    <%= stylesheet_link_tag "blueprint-bootstrap" %>
+    <%= javascript_include_tag '//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js' %>
+    <%= javascript_include_tag '//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js' %>
+    <script type="text/javascript">
+      I18n = { }
+      I18n.defaultLocale = "en"
+      I18n.locale = "<%= I18n.locale %>"
+      I18n.fallbacks = true
+      <% site_place = @site && @site.place
+         user_place = current_user && current_user.place -%>
+      <% if site_place -%>
+        var SITE_PLACE = <%= json_escape site_place.to_json(only: [:id, :name]).html_safe %>
+      <% end -%>
+      var PREFERRED_PLACE;
+      <% if place = (user_place || site_place) -%>
+      PREFERRED_PLACE = <%= json_escape (user_place || site_place).
+        to_json(only: [:id, :name, :place_type], methods: [:ancestor_place_ids]).html_safe %>
+      <% end -%>
+    </script>
+    <%= javascript_include_tag 'application_bundle' %>
+    <%= csrf_meta_tag %>
+    <% if CONFIG.twitter && CONFIG.twitter.username -%>
+      <meta name="twitter:site" content="<%= CONFIG.twitter.username %>">
+    <% end -%>
+    <meta property="og:site_name" content="<%= CONFIG.site_name %>"/>
+    <% if CONFIG.facebook && CONFIG.facebook['app_id'] -%>
+      <meta property="fb:app_id" content="<%= CONFIG.facebook['app_id'] %>" />
+    <% end -%>
+    <% if !@headless && @site && @site.preferred_ios_app_id -%>
+      <meta name="apple-itunes-app" content="app-id=<%= @site.preferred_ios_app_id %>">
+    <% end -%>
+    <%= yield :extrahead %>
+    <%= yield :extracss %>
+    <%= yield :extrajs %>
+  </head>
+<body class="browser">
+  <div id="bodywrapper">
+    <% unless @headless -%>
+      <% cache(User.header_cache_key_for(current_user, site: @site)) do %>
+        <%= render :partial => 'shared/header' %>
+      <% end %>
+    <% end -%>
+    
+    <% if flash[:notice] || flash[:alert] %>
+    <p id="flash" class="notice"><%= (flash[:notice] || flash[:alert]).html_safe %></p> 
+    <% end %>
+    
+    <% if flash[:error] %>
+    <p id="flash" class="error"><%= raw flash[:error] %></p>
+    <% end %>
+
+    <% if @feature_test -%>
+      <div class="container">
+        <div class="notice box">
+          <b><%= @feature_test %> test</b>. This is only a test, so please don't expect everything to work correctly.
+        </div>
+      </div>
+    <% end -%>
+
+    <div id="wrapper" class="container clear">
+      <% if flash[:warning] -%>
+        <div class="notice box">
+          <% if flash[:warning_title] -%>
+            <h3><%=raw flash[:warning_title] %></h3>
+          <% end -%>
+          <p class="unstacked">
+            <%=raw flash[:warning] %>
+          </p>
+        </div>
+      <% end -%>
+      <%= yield %>
+    </div><!-- end wrapper -->
+    
+    <div id="modal_image_box" class="modalbox" style="display:none"></div>
+    <div id="comment_preview" class="modalbox" style="display: none"></div>
+  </div>
+  
+  <%= render :partial => 'shared/footer' unless @footless %>
+  
+  <% if logged_in? -%>
+    <script type="text/javascript" charset="utf-8">
+      setUpdatesCount(<%= session[:updates_count].to_i %>)
+      setTimeout(getUpdatesCount, 1000)
+      setMessagesCount(<%= session[:messages_count].to_i %>)
+      setTimeout(getMessagesCount, 1000)
+    </script>
+  <% end -%>
+  <script type="text/javascript">
+    if (typeof(ga) != 'undefined') {
+      ga('set', 'dimension1', <%=raw logged_in? ? "'true'" : "'false'" %>);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<%- content_for(:title) do -%>
+  <% @title = capture do %>
+    <%=t :flags_for %>
+    <%= link_to @object.try_methods(:to_plain_s, :to_s), @object %>
+  <% end %>
+  <%= strip_tags @title %>
+<%- end -%>
+<div id="pageheader" class="column span-24">
+  <span class="breadcrumbs">
+    <%= link_to t(:back_to_this , :place=> "#{@object.try_methods(:to_plain_s, :to_s)}"),
+                @object,
+                :class => 'back crumb' %>
+  </span>
+
+  <h2><%= @title %></h2>
+</div>
+
+<div class="description">
+  <p>
+    <%=t :flags_explanation, :site_name => SITE_NAME %>
+    <%=t :flagged_thing_explanation, :thing => @model.name.downcase %>
+  </p>
+</div>
+
+<ul>
+  <% if @flags.empty? %>
+    <li class="quiet description"><%=t :no_flags %></li>
+  <% end %>  
+  <%= render :partial => "flag_list", :locals => { :flags => @flags } %>
+</ul>

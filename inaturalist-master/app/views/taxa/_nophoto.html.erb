@@ -1,0 +1,11 @@
+<% taxon ||= nophoto || nophoto %>
+<div class="nophoto">
+  <%= link_to(taxon_image(taxon, :size => 32), taxon) %>
+  <div class="description">
+    <%= render :partial => "shared/taxon", :locals => { 
+      :taxon => taxon,
+      :link_url => taxon } %>
+    <%= t(:doesnt_have_default_photo) %>
+    <%= link_to t(:want_to_add_one), taxon %>
+  </div>
+</div>

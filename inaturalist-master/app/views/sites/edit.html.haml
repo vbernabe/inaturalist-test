@@ -1,0 +1,8 @@
+= content_for :title do
+  = @title = t(:editing_site, :default => "Editing site")
+.container
+  .row
+    .col-md-12
+      %h1=t :editing_site
+  = render 'form'
+

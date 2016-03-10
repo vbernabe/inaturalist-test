@@ -1,0 +1,22 @@
+- content_for :title do
+  = @title = t(:sites, :default => "Sites")
+.container
+  %h1= @title
+
+  %table.table.table-bordered
+    %tr
+      %th
+      %th=t :name
+      %th=t :url
+      %th
+
+    - @records.each do |site|
+      %tr
+        %td= link_to image_tag(site.logo.url), site
+        %td= link_to site.name, site
+        %td= link_to site.url, site.url
+        %td= link_to t(:edit), edit_site_path(site)
+
+  %br
+
+  = link_to t(:new_site), new_site_path
